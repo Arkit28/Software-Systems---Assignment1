@@ -77,8 +77,8 @@ void launch_program(char *args[], int argsc)
     } else {
         /* Parent: wait for child to finish */
         int status;
-        if (waitpid(rc, &status, 0) == -1) {
-            perror("waitpid failed");
+        if (waitpid(rc, &status, 0) == -1) {//wait pid (child PID number, contains encoded exit info in this pointer variable, 0 means block till child finishes)
+            perror("waitpid failed");//retured -1 meaning error: no such child, invalid PID...
         }
     }
 }
