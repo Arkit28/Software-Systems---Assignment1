@@ -47,8 +47,8 @@ void child(char *args[], int argsc)
 {
     /* Replace the current process image with the program specified in args.
        If execvp returns, an error occurred. */
-    execvp(args[0], args);
-    perror("execvp failed");//outputs process failed
+    execvp(args[0], args);//takes a vector input, uses args[0] to find path to direc
+    perror("execvp failed");
     exit(EXIT_FAILURE);
 }
 
