@@ -64,6 +64,7 @@ void launch_program(char *args[], int argsc)
         exit(0);
     }
 
+    // forking child process
     pid_t rc = fork();
     if (rc < 0) {
         perror("fork failed");
