@@ -55,10 +55,6 @@ void child(char *args[], int argsc)
     execvp(args[0],args);
     //This wil run if execvp fails
     perror("execp failed");
-
-
-
-
 }
 
 void launch_program(char *args[], int argsc)
