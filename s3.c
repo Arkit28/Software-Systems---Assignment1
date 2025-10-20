@@ -45,28 +45,39 @@ void parse_command(char line[], char *args[], int *argsc)
 ///Launch related functions
 void child(char *args[], int argsc)
 {
-    ///Implement this function:
-
-    ///Use execvp to load the binary 
-    ///of the command specified in args[ARG_PROGNAME].
-    ///For reference, see the code in lecture 3.
-
-    //this replaces the current child process with the program to run
-    execvp(args[0],args);
-    //This wil run if execvp fails
-    perror("execp failed");
+    /* Replace the current process image with the program specified in args.
+       If execvp returns, an error occurred. */
+    execvp(args[0], args);
+    perror("execvp failed");
+    exit(EXIT_FAILURE);
 }
 
 void launch_program(char *args[], int argsc)
 {
-    ///Implement this function:
+    /* no input, do nothing */
+    if (argsc == 0) {
+        return;
+    }
 
-    ///fork() a child process.
-    ///In the child part of the code,
-    ///call child(args, argv)
-    ///For reference, see the code in lecture 2.
+    /* If the user typed 'exit', exit the shell (current process). */
+    if (strcmp(args[0], "exit") == 0) {
+        exit(0);
+    }
 
-    ///Handle the 'exit' command;
-    ///so that the shell, not the child process,
-    ///exits.
+    pid_t rc = fork();
+    if (rc < 0) {
+        perror("fork failed");
+        return;
+    } else if (rc == 0) {
+        /* Child: execute program */
+        child(args, argsc);
+        /* If child returns, exit with failure */
+        exit(EXIT_FAILURE);
+    } else {
+        /* Parent: wait for child to finish */
+        int status;
+        if (waitpid(rc, &status, 0) == -1) {
+            perror("waitpid failed");
+        }
+    }
 }
