@@ -47,25 +47,26 @@ void child(char *args[], int argsc)
 {
     /* Replace the current process image with the program specified in args.
        If execvp returns, an error occurred. */
+
+    if(args[0] == "exit"){
+        exit(0);
+    }
+
     execvp(args[0], args);//takes a vector input, uses args[0] to find path to direc
+    
     perror("execvp failed");
     exit(EXIT_FAILURE);
 }
 
 void launch_program(char *args[], int argsc)
 {
-    /* no input, do nothing */
-    if (argsc == 0) {
-        return;
-    }
 
-    /* If the user typed 'exit', exit the shell (current process). */
-    if (strcmp(args[0], "exit") == 0) {
+    if(args[0] != NULL && strcmp(args[0], "exit") == 0){
+        printf("Exiting Shell...\n");
         exit(0);
     }
+    int rc = fork();
 
-    // forking child process
-    pid_t rc = fork();
     if (rc < 0) {
         perror("fork failed");
         return;
@@ -77,8 +78,13 @@ void launch_program(char *args[], int argsc)
     } else {
         /* Parent: wait for child to finish */
         int status;
-        if (waitpid(rc, &status, 0) == -1) {//wait pid (child PID number, contains encoded exit info in this pointer variable, 0 means block till child finishes)
-            perror("waitpid failed");//retured -1 meaning error: no such child, invalid PID...
+        if (waitpid(rc, &status, 0) == -1) {
+            perror("waitpid failed");
         }
     }
 }
+
+void launch_program_with_redirection(char* args[], int argsc){}
+void command_with_redirection(char line[]){}
+
+
