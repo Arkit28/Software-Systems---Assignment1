@@ -86,13 +86,34 @@ void launch_program(char *args[], int argsc)
 
 
 
+/* TODO: Make function below accept < and >> operators too */
 
-void launch_program_with_redirection(char* args[], int argsc){
+void launch_program_with_redirection(char* args[], int argsc)
+{
+    int rc = fork();
 
+    if(rc < 0)
+    {
+        perror("fork failed, terminating process\n");
+        return;
+    }
+    else if(rc == 0)
+    {
+        // call child with output redirection
+        child_with_output_redirection(args, argsc);
+        // if child returns theres an error
+        perror("Child flopped");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        //parent waiting for child to complete
+        int status;
+        if (waitpid(rc, &status, 0) == -1) {
+            perror("waitpid failed");
+        }
+    }
 
-
-
-    
 }
 
 
@@ -101,12 +122,43 @@ void launch_program_with_redirection(char* args[], int argsc){
 int command_with_redirection(char line[]){//checks if a redirection exists detecting < or >
     //scan the input string for < or >
     for(int i = 0; line[i] != '\0'; i++){
-        if(line[i]=="<"||line[i]==">"){
-            return 1;//redirection detected
+        if(line[i] == '>' || line[i] == '<'){
+            return 1;       //redirection detected
         }
         
     }
-    return -1;//no redirection detected
+    return 0;    //no redirection detected
 }
 
 
+/* TODO: make a function to determine the file which the output should end up in*/
+
+// child's output goes to file:
+void child_with_output_redirection(char *args[], int argsc)
+{
+    int file = open(args[3], O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if(file == -1)
+    {
+        perror("open failed");
+        return;
+    }
+
+    if(dup2(file, STDOUT_FILENO) == -1)
+    {
+        perror("dup2 failed");
+        close(file);
+        return;
+    }
+    close(file);
+
+    //if all checks are fine, execute command
+    execvp(args[0], args);
+    perror("execvp failed");    // if execvp returns theres an error
+    return;
+    
+}
+
+
+/* TODO: implement function below AND make a function to determine where the input is coming from*/
+
+void child_with_input_redirection(char* args[], int argsc){}
