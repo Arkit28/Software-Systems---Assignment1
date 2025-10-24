@@ -84,7 +84,24 @@ void launch_program(char *args[], int argsc)
     }
 }
 
+
+
+
 void launch_program_with_redirection(char* args[], int argsc){}
-void command_with_redirection(char line[]){}
+
+
+
+
+int command_with_redirection(char line[]){//checks if a redirection exists detecting < or >
+    //scan the input string for < or >
+    for(int i = 0; line[i] != '\0'; i++){
+        if(line[i]=="<"||line[i]==">"){
+            return 1;
+        }
+    }
+    else{
+        return 0;
+    }
+}
 
 
