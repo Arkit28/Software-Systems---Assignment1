@@ -84,7 +84,7 @@ void launch_program(char *args[], int argsc)
     }
 }
 
-
+//task2//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* TODO: Make function below accept < and >> operators too */
 
@@ -117,24 +117,21 @@ void launch_program_with_redirection(char* args[], int argsc)
 }
 
 
-
-
 int command_with_redirection(char line[]){//checks if a redirection exists detecting < or >
     //scan the input string for < or >
     for(int i = 0; line[i] != '\0'; i++){
         if(line[i] == '>' || line[i] == '<'){
-            return 1;       //redirection detected
+            return 1;//redirection detected
         }
-        
     }
-    return 0;    //no redirection detected
+    return 0;//no redirection detected
 }
 
 
 /* TODO: make a function to determine the file which the output should end up in*/
 
 // child's output goes to file:
-void child_with_output_redirection(char *args[], int argsc)
+void child_with_output_redirection(char *args[], int argsc)//e.g ls -l > out.txt
 {
     int file = open(args[3], O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if(file == -1)
@@ -161,4 +158,25 @@ void child_with_output_redirection(char *args[], int argsc)
 
 /* TODO: implement function below AND make a function to determine where the input is coming from*/
 
-void child_with_input_redirection(char* args[], int argsc){}
+void child_with_input_redirection(char* args[], int argsc)//e.g sort < data.txt
+{
+    int file = open(args[3], O_RDONLY);
+    if(file == -1)
+    {
+        perror("open failed");
+        return;
+    }
+
+    if(dup2(file, STDIN_FILENO) == -1)
+    {
+        perror("dup2 failed");
+        close(file);
+        return;
+    }
+    close(file);
+
+        //if all checks are fine, execute command
+    execvp(args[0], args);
+    perror("execvp failed");    // if execvp returns theres an error
+    return;
+}
