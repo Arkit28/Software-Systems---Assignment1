@@ -16,6 +16,11 @@
 #define MAX_ARGS 128
 #define MAX_PROMPT_LEN 256
 
+//global variables
+
+extern int redirection_type;  // 0 = none, 1 = >, 2 = >>, 3 = < stores the type of redirection once command_with_redirection runs
+
+
 ///Enum for readable argument indices (use where required)
 enum ArgIndex
 {
@@ -48,8 +53,15 @@ void launch_program(char *args[], int argsc);
 
 int command_with_redirection(char line[]);//to check if command contains redirection
 
+void launch_program_with_redirection(char *args[], int argsc)// Executes a command with input/output redirection by using dup2() to map STDIN/STDOUT to the target file before execvp(), then waits for the child to finish.
 
+//redirection different types
+void child_with_output_redirection_overwrite(char *args[], int argsc)
+void child_with_input_redirection(char* args[], int argsc)
+void child_with_output_redirection_appending(char *args[], int argsc)
 
-
+//redirectionhelper functions
+char *redirection_file(char *args[], int argsc)//getting the file name to create and dup
+char **redir_exec_args(char *args[], int argsc)//pointer to array of pointerts to strings of the command
 
 #endif

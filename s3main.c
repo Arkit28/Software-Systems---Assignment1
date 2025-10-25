@@ -1,5 +1,9 @@
 #include "s3.h"
 
+
+int redirection_type = 0;//stores the type fo redirection once command_with_redirection runs
+
+
 int main(int argc, char *argv[]){
 
     ///Stores the command line input
@@ -11,6 +15,7 @@ int main(int argc, char *argv[]){
 
     ///Stores the number of arguments
     int argsc;
+    
 
     while (1) {
 

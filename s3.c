@@ -1,4 +1,8 @@
 #include "s3.h"
+#include <string.h>
+#define MAX_ARGS 128
+
+
 
 ///Simple for now, but will be expanded in a following section
 void construct_shell_prompt(char shell_prompt[])
@@ -97,10 +101,23 @@ void launch_program_with_redirection(char* args[], int argsc)
         perror("fork failed, terminating process\n");
         return;
     }
-    else if(rc == 0)
+    else if(rc == 0)//i am the childe process
     {
-        // call child with output redirection
-        child_with_output_redirection(args, argsc);
+        // call the specifc child function for redirection
+        switch (redirection_type){
+            case 1://>
+                child_with_output_redirection_overwrite(args, argsc);
+                break;
+            case 2://>>
+                child_with_output_redirection_appending(args, argsc);
+                break;
+            case 3://<
+                child_with_input_redirection(args, argsc);
+                break;
+            default:
+                perror("invalid redirection_type");
+                exit(EXIT_FAILURE);
+        }
         // if child returns theres an error
         perror("Child flopped");
         exit(EXIT_FAILURE);
@@ -120,8 +137,15 @@ void launch_program_with_redirection(char* args[], int argsc)
 int command_with_redirection(char line[]){//checks if a redirection exists detecting < or >
     //scan the input string for < or >
     for(int i = 0; line[i] != '\0'; i++){
-        if(line[i] == '>' || line[i] == '<'){
-            return 1;//redirection detected
+        if(line[i] == '>'){
+            redirection_type=1;
+            return 1;//child_with_output_redirection needs calling
+        }else if ( line[i] == '>' && line[i+1] == '>'){
+            redirection_type=2;
+            return 2;//child_with_input_redirection_appending needs calling
+        }else if ( line[i] == '<'){
+            redirection_type=3;
+            return 3;//child_with_input_redirection needs calling
         }
     }
     return 0;//no redirection detected
@@ -131,9 +155,10 @@ int command_with_redirection(char line[]){//checks if a redirection exists detec
 /* TODO: make a function to determine the file which the output should end up in*/
 
 // child's output goes to file:
-void child_with_output_redirection(char *args[], int argsc)//e.g ls -l > out.txt
+// handles "command > file"
+void child_with_output_redirection_overwrite(char *args[], int argsc)//e.g ls -l > out.txt
 {
-    int file = open(args[3], O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    int file = open(redirection_file(args,argsc), O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if(file == -1)
     {
         perror("open failed");
@@ -149,8 +174,8 @@ void child_with_output_redirection(char *args[], int argsc)//e.g ls -l > out.txt
     close(file);
 
     //if all checks are fine, execute command
-    execvp(args[0], args);
-    perror("execvp failed");    // if execvp returns theres an error
+    execvp(args[0], redir_exec_args(args, argsc));
+    perror("execvp failed");// if execvp returns theres an error
     return;
     
 }
@@ -158,9 +183,11 @@ void child_with_output_redirection(char *args[], int argsc)//e.g ls -l > out.txt
 
 /* TODO: implement function below AND make a function to determine where the input is coming from*/
 
+
+// handles "command < file"
 void child_with_input_redirection(char* args[], int argsc)//e.g sort < data.txt
 {
-    int file = open(args[3], O_RDONLY);
+    int file = open(redirection_file(args,argsc), O_RDONLY);
     if(file == -1)
     {
         perror("open failed");
@@ -176,7 +203,73 @@ void child_with_input_redirection(char* args[], int argsc)//e.g sort < data.txt
     close(file);
 
         //if all checks are fine, execute command
-    execvp(args[0], args);
-    perror("execvp failed");    // if execvp returns theres an error
+    execvp(args[0], redir_exec_args(args, argsc));
+    perror("execvp failed");// if execvp returns theres an error
     return;
 }
+
+
+// handles "command >> file"
+void child_with_output_redirection_appending(char *args[], int argsc)//echo "second" >> file.txt
+{//same as child_with_output_redirection bu flags changed
+    int file = open(redirection_file(args,argsc), O_CREAT | O_WRONLY | O_APPEND, 0644);
+    if (file == -1) {
+        perror("open failed");
+        return;
+    }
+
+    if (dup2(file, STDOUT_FILENO) == -1) {
+        perror("dup2 failed");
+        close(file);
+        return;
+    }
+    close(file);
+
+    execvp(args[0], redir_exec_args(args, argsc));
+    perror("execvp failed");
+    return;
+}
+
+//making a function to get the arguments for the child redirections for the open function
+char *redirection_file(char *args[], int argsc)
+{
+    for (int i = 0; i < argsc - 1; i++) {
+        if (strcmp(args[i], "<") == 0 || strcmp(args[i], ">") == 0 || strcmp(args[i], ">>") == 0) {
+            return args[i + 1];  // returning the filename after the symbol
+        }
+    }
+    return NULL; // no redirection symbol found
+}
+
+//making a function to get the arguments for the child redirections for the execvp function
+char **redir_exec_args(char *args[], int argsc)
+{
+    static char *exec_args[MAX_ARGS];
+    int count = 0;
+
+    //counting tokens before redirection
+    for(int i=0; i<argsc; i++)
+    {
+        if(strcmp(args[i], "<") == 0 || strcmp(args[i], ">") == 0 || strcmp(args[i], ">>")==0)
+        {
+            break;//exit the for loop before redirection
+        }else
+        {
+            exec_args[count]=args[i];
+            count++;
+        }
+    }
+    //adding last part of the array the null pty
+    exec_args[count]=NULL;
+    return exec_args;
+}
+
+
+
+
+
+
+
+
+
+
