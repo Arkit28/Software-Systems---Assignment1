@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -39,6 +40,12 @@ static inline void reap()
     wait(NULL);
 }
 
+static inline int choose_flags(int redirection_type){
+    return (redirection_type == 1) ?
+        O_WRONLY | O_CREAT | O_TRUNC : 
+        O_WRONLY | O_CREAT | O_APPEND;
+}
+
 ///Shell I/O and related functions (add more as appropriate)
 void read_command_line(char line[]);
 void construct_shell_prompt(char shell_prompt[]);
@@ -56,12 +63,16 @@ int command_with_redirection(char line[]);//to check if command contains redirec
 void launch_program_with_redirection(char *args[], int argsc);// Executes a command with input/output redirection by using dup2() to map STDIN/STDOUT to the target file before execvp(), then waits for the child to finish.
 
 //redirection different types
-void child_with_output_redirection_overwrite(char *args[], int argsc);
+void child_with_output_redirection(char *args[], int argsc);
 void child_with_input_redirection(char* args[], int argsc);
-void child_with_output_redirection_appending(char *args[], int argsc);
 
 //redirection helper functions
 char *redirection_file(char *args[], int argsc);//getting the file name to create and dup
 char **redir_exec_args(char *args[], int argsc);//pointer to array of pointerts to strings of the command
+
+
+
+//debug function:
+void print_tokens(char* args[], int argsc);
 
 #endif
