@@ -1,5 +1,6 @@
 #include "s3.h"
 #include <string.h>
+#include <sys/wait.h>
 #define MAX_ARGS 128
 
 
@@ -259,7 +260,7 @@ char **redir_exec_args(char *args[], int argsc)
             count++;
         }
     }
-    //adding last part of the array the null pty
+    //adding last part of the array, the NULL
     exec_args[count]=NULL;
     return exec_args;
 }
