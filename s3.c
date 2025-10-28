@@ -1,19 +1,35 @@
 #include "s3.h"
 #define MAX_ARGS 128
 
+char cwd[MAX_PROMPT_LEN];
+char lwd[MAX_PROMPT_LEN];
+int redirection_type;
 
+/*
+// get current working directory:
+void current_working_directory(char* cwd[MAX_ARGS])
+{
+    cwd = getcwd();
+}
+*/
 
 ///Simple for now, but will be expanded in a following section
-void construct_shell_prompt(char shell_prompt[])
+void construct_shell_prompt(char shell_prompt[], char lwd[])
 {
-    strcpy(shell_prompt, "[s3]$ ");
+    if (getcwd(cwd, MAX_ARGS) == NULL)
+    {
+        perror("getcwd failed");
+        cwd[0] = '\0';
+    }
+
+    snprintf(shell_prompt, MAX_PROMPT_LEN, "[%.248s]$ ", cwd);
 }
 
 ///Prints a shell prompt and reads input from the user
-void read_command_line(char line[])
+void read_command_line(char line[], char lwd[])
 {
     char shell_prompt[MAX_PROMPT_LEN];
-    construct_shell_prompt(shell_prompt);
+    construct_shell_prompt(shell_prompt, lwd);
     printf("%s", shell_prompt);
 
     ///See man page of fgets(...)
@@ -46,7 +62,6 @@ void parse_command(char line[], char *args[], int *argsc)
 }
 
 
-
 // debug function
 void print_tokens(char *args[], int argsc)
 {
@@ -58,13 +73,11 @@ void print_tokens(char *args[], int argsc)
 }
 
 
-
-
 ///Launch related functions
 void child(char *args[], int argsc)
 {
-    /* Replace the current process image with the program specified in args.
-       If execvp returns, an error occurred. */
+    // Replace the current process image with the program specified in args.
+    // If execvp returns, an error occurred. 
 
     if(args[0] == "exit"){
         exit(0);
@@ -89,12 +102,12 @@ void launch_program(char *args[], int argsc)
         perror("fork failed");
         return;
     } else if (rc == 0) {
-        /* Child: execute program */
+        // Child: execute program 
         child(args, argsc);
-        /* If child returns, exit with failure */
+        // If child returns, exit with failure
         exit(EXIT_FAILURE);
     } else {
-        /* Parent: wait for child to finish */
+        // Parent: wait for child to finish 
         int status;
         if (waitpid(rc, &status, 0) == -1) {
             perror("waitpid failed");
@@ -103,7 +116,7 @@ void launch_program(char *args[], int argsc)
 }
 
 
-/* TODO: Make function below accept < and >> operators too */
+// TODO: Make function below accept < and >> operators too 
 
 void launch_program_with_redirection(char* args[], int argsc)
 {
@@ -138,6 +151,8 @@ void launch_program_with_redirection(char* args[], int argsc)
     }
 
 }
+
+// Suggestion : create a single function that classifies all types of commands, rather than making multiple functions
 
 // checks for redirection operator, stores type in redirection_type
 int command_with_redirection(char line[]){
@@ -192,10 +207,6 @@ void child_with_output_redirection(char *args[], int argsc)   //e.g ls -l > out.
     
 }
 
-
-/* TODO: implement function below AND make a function to determine where the input is coming from*/
-
-
 // handles "command < file"
 void child_with_input_redirection(char* args[], int argsc)//e.g sort < data.txt
 {
@@ -235,7 +246,6 @@ char *redirection_file(char *args[], int argsc)
 }
 
 
-
 //function to get the command line arguments for execution
 char **redir_exec_args(char *args[], int argsc)
 {
@@ -260,8 +270,10 @@ char **redir_exec_args(char *args[], int argsc)
     return exec_args;
 }
 
-
-
+//TODO : directory stuff to implement
+int is_cd(char args[]){ return 0;}
+void run_cd(char* args[], int argsc, char lwd[]){}
+void init_lwd(char lwd[]){}
 
 
 
