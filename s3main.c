@@ -23,6 +23,8 @@ int main(int argc, char *argv[]){
 
         if(is_cd(line)){///Implement this function
             parse_command(line, args, &argsc);
+            printf("change directory detected!\n");
+            print_tokens(args, argsc);
             run_cd(args, argsc, lwd); ///Implement this function
         }
         else if(command_with_redirection(line)){

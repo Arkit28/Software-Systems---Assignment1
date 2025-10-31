@@ -69,11 +69,18 @@ char *redirection_file(char *args[], int argsc);    //getting the file name to c
 char **redir_exec_args(char *args[], int argsc);    //pointer to array of pointerts to strings of the command
 
 //directory functions:
-int is_cd(char args[]);
+int is_cd(char args[]);                             
 void run_cd(char* args[], int argsc, char lwd[]);
-void init_lwd(char lwd[]);
+void init_lwd(char lwd[]);                          //set lwd = current working directory on shell start
+//EXTENSION: directory stack using a 2d array, with basic functions
+char directory_stack[128][MAX_LINE];
+int top = -1;
+void pushd(const char* dir);
+void popd();
+void dirs();
 
-//debug function:
+
+//debug functions:
 void print_tokens(char* args[], int argsc);
 
 #endif

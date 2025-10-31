@@ -5,13 +5,6 @@ char cwd[MAX_PROMPT_LEN];
 char lwd[MAX_PROMPT_LEN];
 int redirection_type;
 
-/*
-// get current working directory:
-void current_working_directory(char* cwd[MAX_ARGS])
-{
-    cwd = getcwd();
-}
-*/
 
 ///Simple for now, but will be expanded in a following section
 void construct_shell_prompt(char shell_prompt[], char lwd[])
@@ -115,8 +108,6 @@ void launch_program(char *args[], int argsc)
     }
 }
 
-
-// TODO: Make function below accept < and >> operators too 
 
 void launch_program_with_redirection(char* args[], int argsc)
 {
@@ -270,11 +261,57 @@ char **redir_exec_args(char *args[], int argsc)
     return exec_args;
 }
 
-//TODO : directory stuff to implement
-int is_cd(char args[]){ return 0;}
-void run_cd(char* args[], int argsc, char lwd[]){}
-void init_lwd(char lwd[]){}
+//Check if the command is 'cd'
+int is_cd(char args[])
+{
+    for(int i = 0; i < MAX_LINE; ++i){
+        if(args[i] == 'c' && args[i+1] == 'd')
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
 
+// change directory to the one specified 
+void run_cd(char* args[], int argsc, char lwd[])
+{
+    const char* home = getenv("HOME");
+    //case 1: '' go to home directory
+    if(args[1] == NULL)
+    {
+        printf("no dir: %d\n", chdir(home));
+        return;
+    }
+
+    //case2: '-' go to lwd, if lwd is not set then bash returns an error
+    if(strcmp(args[1], "-") == 0)
+    {   
+        chdir(lwd);
+        char tmp[MAX_PROMPT_LEN];
+        strcpy(tmp, cwd);
+        strcpy(cwd, lwd);
+        strcpy(lwd, tmp);
+
+        return;
+    }
+
+    //case3: "FILEPATH" change directory to normal path
+    if(chdir(args[1])){
+        lwd = cwd;
+        strcpy(cwd, args[1]);
+        return;
+    }
+}
+
+void init_lwd(char lwd[])
+{
+    lwd = getcwd(lwd, MAX_PROMPT_LEN);
+}
+
+void pushd(const char* dir){}
+void popd(){}
+void dirs(){}
 
 
 
