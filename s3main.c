@@ -19,13 +19,19 @@ int main(int argc, char *argv[]){
 
     while (1) {
 
-        read_command_line(line, lwd); ///Notice the additional parameter (required for prompt construction)
+        read_command_line(line, lwd);       ///Notice the additional parameter (required for prompt construction)
 
-        if(is_cd(line)){///Implement this function
+        if(command_with_pipes(line)){
+            printf("pipes detected!");
+            parse_command(line, args, &argsc);
+            print_tokens(args, argsc);
+            print_piped_tokens(args, argsc);
+        }
+        else if(is_cd(line)){               ///Implement this function
             parse_command(line, args, &argsc);
             printf("change directory detected!\n");
             print_tokens(args, argsc);
-            run_cd(args, argsc, lwd); ///Implement this function
+            run_cd(args, argsc, lwd);       ///Implement this function
         }
         else if(command_with_redirection(line)){
             ///Command with redirection

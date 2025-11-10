@@ -143,8 +143,6 @@ void launch_program_with_redirection(char* args[], int argsc)
 
 }
 
-// Suggestion : create a single function that classifies all types of commands, rather than making multiple functions
-
 // checks for redirection operator, stores type in redirection_type
 int command_with_redirection(char line[]){
     //scan the input string for < or >
@@ -309,11 +307,64 @@ void init_lwd(char lwd[])
     lwd = getcwd(lwd, MAX_PROMPT_LEN);
 }
 
+char directory_stack[128][MAX_LINE];  
+int top = -1;
 void pushd(const char* dir){}
 void popd(){}
 void dirs(){}
 
+//check whether input has pipes
+int command_with_pipes(char line[]){
+    for(int i = 0; line[i] != '\0'; ++i){
+        if(line[i] == '|'){
+            return 1;
+        }
+    }
 
+    return 0;
+}
+
+//split piped commands 
+int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_PROMPT_LEN][3]){
+    int cmd_index = 0;
+    int arg_index = 0;
+
+    for(int i = 0; i < argsc; ++i){
+        if(strcmp(args[i], "|") == 0){
+            //current command has ended
+            cmds_piped[cmd_index][arg_index] = NULL;
+            cmd_index++;
+            arg_index = 0;
+            continue;
+        }
+        cmds_piped[cmd_index][arg_index++] = args[i];
+    }
+
+    cmds_piped[cmd_index][arg_index] = NULL;
+    return cmd_index + 1;
+
+}
+
+void print_piped_tokens(char* args[], int argsc){
+    char *cmds_piped[MAX_PROMPT_LEN][3];
+
+    int num_cmds = tokenise_pipe_commands(args, argsc, cmds_piped);
+
+    printf("Found %d commands:\n", num_cmds);
+    for (int i = 0; i < num_cmds; i++) {
+        printf("Command %d: ", i);
+        for (int j = 0; cmds_piped[i][j] != NULL; j++) {
+            printf("%s ", cmds_piped[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+// launch commands, connecting previous command output to next command input
+void launch_command_with_pipes(char* args[], int argsc){
+    char* cmds_piped[MAX_PROMPT_LEN][3];
+    int num_of_commands = tokenise_pipe_commands(args, argsc, cmds_piped);
+}
 
 
 

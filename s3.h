@@ -61,6 +61,7 @@ void child_with_input_redirection(char* args[], int argsc);         //redirectio
 ///Program launching functions (add more as appropriate)
 void launch_program(char *args[], int argsc);
 void launch_program_with_redirection(char *args[], int argsc);  // Executes a command with input/output redirection by using dup2() to map STDIN/STDOUT to the target file before execvp(), then waits for the child to finish.
+void launch_program_with_pipes(char *args[], int argsc);        //executes commands with pipes
 
 
 //redirection helper functions
@@ -68,19 +69,26 @@ int command_with_redirection(char line[]);        //to check if command contains
 char *redirection_file(char *args[], int argsc);    //getting the file name to create and dup
 char **redir_exec_args(char *args[], int argsc);    //pointer to array of pointerts to strings of the command
 
+
 //directory functions:
 int is_cd(char args[]);                             
 void run_cd(char* args[], int argsc, char lwd[]);
 void init_lwd(char lwd[]);                          //set lwd = current working directory on shell start
+
 //EXTENSION: directory stack using a 2d array, with basic functions
-char directory_stack[128][MAX_LINE];
-int top = -1;
+extern char directory_stack[128][MAX_LINE];
+extern int top;
 void pushd(const char* dir);
 void popd();
 void dirs();
 
 
+// pipeline functions:
+int command_with_pipes(char line[]);
+int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_PROMPT_LEN][3]);
+
+
 //debug functions:
 void print_tokens(char* args[], int argsc);
-
+void print_piped_tokens(char* args[], int argsc);
 #endif
