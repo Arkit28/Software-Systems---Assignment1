@@ -85,8 +85,8 @@ void dirs();
 
 // pipeline functions:
 int command_with_pipes(char line[]);
-int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_PROMPT_LEN][3]);
-
+int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_ARGS][MAX_ARGS]);
+char* strip_quotes(char* str);
 
 //debug functions:
 void print_tokens(char* args[], int argsc);

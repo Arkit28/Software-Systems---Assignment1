@@ -22,10 +22,9 @@ int main(int argc, char *argv[]){
         read_command_line(line, lwd);       ///Notice the additional parameter (required for prompt construction)
 
         if(command_with_pipes(line)){
-            printf("pipes detected!");
             parse_command(line, args, &argsc);
-            print_tokens(args, argsc);
-            print_piped_tokens(args, argsc);
+
+            launch_program_with_pipes(args, argsc);
         }
         else if(is_cd(line)){               ///Implement this function
             parse_command(line, args, &argsc);

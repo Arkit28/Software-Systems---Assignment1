@@ -47,11 +47,22 @@ void parse_command(char line[], char *args[], int *argsc)
     *argsc = 0;
     while (token != NULL && *argsc < MAX_ARGS - 1)
     {
-        args[(*argsc)++] = token;
+        args[(*argsc)++] = strip_quotes(token);
         token = strtok(NULL, " ");
     }
     
     args[*argsc] = NULL; ///args must be null terminated
+}
+
+char* strip_quotes(char* s) {
+    int len = strlen(s);
+    if (len >= 2) {
+        if ((s[0] == '"' && s[len-1] == '"') || (s[0] == '\'' && s[len-1] == '\'')) {
+            s[len-1] = '\0'; // remove last quote
+            return s + 1;     // skip first quote
+        }
+    }
+    return s;
 }
 
 
@@ -72,7 +83,7 @@ void child(char *args[], int argsc)
     // Replace the current process image with the program specified in args.
     // If execvp returns, an error occurred. 
 
-    if(args[0] == "exit"){
+    if (args[0] != NULL && strcmp(args[0], "exit") == 0) {
         exit(0);
     }
 
@@ -325,7 +336,7 @@ int command_with_pipes(char line[]){
 }
 
 //split piped commands 
-int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_PROMPT_LEN][3]){
+int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_ARGS][MAX_ARGS]){
     int cmd_index = 0;
     int arg_index = 0;
 
@@ -346,7 +357,7 @@ int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_PROMPT_
 }
 
 void print_piped_tokens(char* args[], int argsc){
-    char *cmds_piped[MAX_PROMPT_LEN][3];
+    char *cmds_piped[MAX_ARGS][MAX_ARGS];
 
     int num_cmds = tokenise_pipe_commands(args, argsc, cmds_piped);
 
@@ -361,9 +372,85 @@ void print_piped_tokens(char* args[], int argsc){
 }
 
 // launch commands, connecting previous command output to next command input
-void launch_command_with_pipes(char* args[], int argsc){
-    char* cmds_piped[MAX_PROMPT_LEN][3];
+void launch_program_with_pipes(char* args[], int argsc){
+    char* cmds_piped[MAX_ARGS][MAX_ARGS];
     int num_of_commands = tokenise_pipe_commands(args, argsc, cmds_piped);
+    pid_t pids[MAX_ARGS];
+
+    int prevRead = -1;
+    int fd[2];
+    for(int i = 0; i < num_of_commands; ++i){
+        if(i < num_of_commands - 1){
+            if (pipe(fd) == -1) {
+                perror("pipe failed");
+                return;
+            }
+        }
+        
+        pids[i] = fork();
+        if(pids[i] < 0){
+            perror("fork failed");
+            return;
+        }
+        else if (pids[i] == 0){
+            if(prevRead != -1){
+                if (dup2(prevRead, STDIN_FILENO) == -1) { perror("dup2 failed"); exit(EXIT_FAILURE); }
+                close(prevRead);
+            }
+            if(i < num_of_commands -1){
+                if (dup2(fd[1], STDOUT_FILENO) == -1) { perror("dup2 failed"); exit(EXIT_FAILURE); }
+                close(fd[1]);
+                close(fd[0]);
+            }
+
+            // get number of args for current command
+            int local_argc = 0;
+            while (local_argc < MAX_ARGS && cmds_piped[i][local_argc] != NULL){
+                local_argc++;
+            }
+
+            // get redirection type for current command
+            int redir = 0;
+            for (int k = 0; k < local_argc; ++k) {
+                if (strcmp(cmds_piped[i][k], ">") == 0) { redirection_type = 1; redir = 1; break; }
+                if (strcmp(cmds_piped[i][k], ">>") == 0) { redirection_type = 2; redir = 1; break; }
+                if (strcmp(cmds_piped[i][k], "<") == 0) { redirection_type = 3; redir = 1; break; }
+            }
+
+            if (redir) {
+
+                if (redirection_type == 3) {
+                    child_with_input_redirection(cmds_piped[i], local_argc);
+                } else {
+                    child_with_output_redirection(cmds_piped[i], local_argc);
+                }
+                /* If we reach here, exec failed inside the redirection helper */
+                perror("execvp (redirection) failed");
+                exit(EXIT_FAILURE);
+
+            } 
+            else {
+                execvp(cmds_piped[i][0], cmds_piped[i]);
+                perror("execvp failed");
+                exit(EXIT_FAILURE);
+            }
+
+        } 
+        else{
+            // parent closes pipe and preps for next pipe
+
+            if (prevRead != -1) close(prevRead);
+            if (i < num_of_commands - 1) {
+                close(fd[1]);
+                prevRead = fd[0];
+            }
+            // wait for child to finish
+            for(int i = 0; i < num_of_commands; ++i){
+                waitpid(pids[i], NULL, 0);
+            }
+        }
+
+    }
 }
 
 
