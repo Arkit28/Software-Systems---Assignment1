@@ -9,6 +9,20 @@ Shell in C yuddddddyyyyyyyy gang
 
 
 CURRENT TASK: 
+Task 5 - Batched commands:
+Execution of multiple commands independently in a sequential manner, regardless of whether previous commands were successful. It uses a semicolon to indicate the end of a command line.
+
+To implement:
+- detect batched commands in the input line
+- split batched commands into their own commands, then execute them separately in order
+
+Consideration:
+- ensure shell continues to execute commands whether or not previous ones succeeded
+- consider whether commands have pipes, redirection etc
+
+
+
+COMPLETED TASKS:
 Task 4 - Commands with pipes:
 Interrprocess communication i.e. commands sending data to each other. To implement will need to use the pipe() function alongside dup2(). Refer to the assignment page for a walkthrough example of how it should work from a high level
 
@@ -16,7 +30,6 @@ To implement:
 - detect whether a pipe is in the command line
 - tokenize the piped commands
 - functions to launch piped commands
-- 
 
 Considerations:
 - read up on pipes properly
@@ -26,7 +39,6 @@ Considerations:
 
 
 
-COMPLETED TASKS:
 Task 3 - Implementing cd:
 To implement the cd command, the chdir() syscall needs to be used. In summary the chdir() takes in the inputs we would expect to pass to cd. There are special . and .. directories which can be passed directly into chdir().
 "cd -" goes to the previous directory, so some method of storage will be needed.
@@ -56,5 +68,6 @@ Considerations:
 - ">>" will need to be implemented too at a later stage
 - learn file handing like STDIN, STDOUT, STDERR better before implementing stuff
 - Learn dup(), dup2() and execvp() syscalls in depth before implementing stuff 
+
 
 
