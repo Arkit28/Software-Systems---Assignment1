@@ -394,11 +394,13 @@ void launch_program_with_pipes(char* args[], int argsc){
         }
         else if (pids[i] == 0){
             if(prevRead != -1){
-                if (dup2(prevRead, STDIN_FILENO) == -1) { perror("dup2 failed"); exit(EXIT_FAILURE); }
+                if (dup2(prevRead, STDIN_FILENO) == -1) { 
+                    perror("dup2 failed"); exit(EXIT_FAILURE); }
                 close(prevRead);
             }
             if(i < num_of_commands -1){
-                if (dup2(fd[1], STDOUT_FILENO) == -1) { perror("dup2 failed"); exit(EXIT_FAILURE); }
+                if (dup2(fd[1], STDOUT_FILENO) == -1) {
+                    perror("dup2 failed"); exit(EXIT_FAILURE); }
                 close(fd[1]);
                 close(fd[0]);
             }
@@ -412,19 +414,25 @@ void launch_program_with_pipes(char* args[], int argsc){
             // get redirection type for current command
             int redir = 0;
             for (int k = 0; k < local_argc; ++k) {
-                if (strcmp(cmds_piped[i][k], ">") == 0) { redirection_type = 1; redir = 1; break; }
-                if (strcmp(cmds_piped[i][k], ">>") == 0) { redirection_type = 2; redir = 1; break; }
-                if (strcmp(cmds_piped[i][k], "<") == 0) { redirection_type = 3; redir = 1; break; }
+                if(strcmp(cmds_piped[i][k], ">") == 0){ 
+                    redirection_type = 1; redir = 1; break; 
+                }
+                if(strcmp(cmds_piped[i][k], ">>") == 0){ 
+                    redirection_type = 2; redir = 1; break; 
+                }
+                if(strcmp(cmds_piped[i][k], "<") == 0){ 
+                    redirection_type = 3; redir = 1; break; 
+                }
             }
 
-            if (redir) {
-
-                if (redirection_type == 3) {
+            if (redir){
+                if (redirection_type == 3){
                     child_with_input_redirection(cmds_piped[i], local_argc);
-                } else {
+                } 
+                else {
                     child_with_output_redirection(cmds_piped[i], local_argc);
                 }
-                /* If we reach here, exec failed inside the redirection helper */
+                //somthings gone wrong :(
                 perror("execvp (redirection) failed");
                 exit(EXIT_FAILURE);
 
