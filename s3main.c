@@ -20,6 +20,8 @@ int main(int argc, char *argv[]){
     while (1) {
 
         read_command_line(line, lwd);       ///Notice the additional parameter (required for prompt construction)
+        
+        tokenise_batched_commands(line, args, &argsc);
 
         if(command_with_pipes(line)){
             parse_command(line, args, &argsc);
@@ -28,8 +30,6 @@ int main(int argc, char *argv[]){
         }
         else if(is_cd(line)){               ///Implement this function
             parse_command(line, args, &argsc);
-            printf("change directory detected!\n");
-            print_tokens(args, argsc);
             run_cd(args, argsc, lwd);       ///Implement this function
         }
         else if(command_with_redirection(line)){

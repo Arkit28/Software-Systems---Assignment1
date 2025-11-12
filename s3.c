@@ -461,6 +461,27 @@ void launch_program_with_pipes(char* args[], int argsc){
     }
 }
 
+//batched commands detection
+int has_batched_commands(char line[]){
+    for(int i = 0; line[i] != '\0'; ++i){
+        if(line[i] == ';'){
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+//batched commands tokenisation
+void tokenise_batched_commands(char line[], char* commands[], int* command_count){
+    parse_command(line, commands, command_count);
+    print_tokens(commands, *command_count);
+
+    // split into a list of commands based on ';' 
+    // group commands + parameters (pipes and redirections too)
+    // execute commands sequentially
+}
+
 
 
 

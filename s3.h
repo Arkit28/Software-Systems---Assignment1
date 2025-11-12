@@ -88,6 +88,11 @@ int command_with_pipes(char line[]);
 int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_ARGS][MAX_ARGS]);
 char* strip_quotes(char* str);
 
+// batched command functions:
+int has_batched_commands(char line[]);
+void tokenise_batched_commands(char line[], char* commands[], int* command_count);
+
+
 //debug functions:
 void print_tokens(char* args[], int argsc);
 void print_piped_tokens(char* args[], int argsc);
