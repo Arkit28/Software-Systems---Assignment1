@@ -92,8 +92,16 @@ char* strip_quotes(char* str);
 int has_batched_commands(char line[]);
 void tokenise_batched_commands(char line[], char* commands[], int* command_count);
 
+//these 2 are used to see if commands with pipes and command with redirection are eithier just by using the args and arc for the current command[i]
+int command_with_pipes_flag(char* args[], int argsc);
+int command_with_redirection_flag(char* args[], int argsc);
+
 
 //debug functions:
 void print_tokens(char* args[], int argsc);
 void print_piped_tokens(char* args[], int argsc);
+
+
+
+
 #endif

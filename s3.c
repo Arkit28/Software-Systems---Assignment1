@@ -474,14 +474,71 @@ int has_batched_commands(char line[]){
 
 //batched commands tokenisation
 void tokenise_batched_commands(char line[], char* commands[], int* command_count){
-    parse_command(line, commands, command_count);
-    print_tokens(commands, *command_count);
 
-    // split into a list of commands based on ';' 
-    // group commands + parameters (pipes and redirections too)
-    // execute commands sequentially
+    //no commands so reset the command count
+    *command_count = 0;
+
+    //pointer to first character of the line of agruments
+    char *start = line;
+
+    //iterate till end of the string
+    while(*start != '\0'){
+
+        //skipping some space before hte command
+        while(*start==' '||*start=='\t'){
+            start++;
+        }
+        //if we hit the end of the lined after skipping spaces which meand an empty command
+        if (*start == '\0'){
+            break;
+        }
+            
+        //finding the end of the command
+        char *end;
+        end = start;
+
+        while (*end != '\0' && *end != ';'){
+            end++;
+        }
+
+        char *trim = end - 1;
+
+        //getting rid of the unecesary space before the end of the command
+        while (trim >= start && (*trim == ' ' || *trim == '\t')){
+            trim--;
+        }
+        *(trim + 1) = '\0';
+
+        //if trimming didnt need to occur we do this
+
+        if (*end == ';') {
+            //end the current command
+            *end = '\0';   
+            end++;
+        }
+
+        commands[*command_count] = start;
+        (*command_count)++;
+
+        start = end;
+    }
+
 }
 
+int command_with_pipes_flag(char* args[], int argsc) {
+    for (int i = 0; i < argsc; i++) {
+        if (strcmp(args[i], "|") == 0)
+            return 1;
+    }
+    return 0;
+}
 
+int command_with_redirection_flag(char* args[], int argsc) {
+    for (int i = 0; i < argsc; i++) {
+        if (!strcmp(args[i], ">") ||!strcmp(args[i], ">>") ||!strcmp(args[i], "<"))
+            return 1;
+    }
+    return 0;
+}
 
 
