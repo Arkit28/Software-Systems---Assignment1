@@ -1,9 +1,9 @@
 #include "s3.h"
 #define MAX_ARGS 128
-
 char cwd[MAX_PROMPT_LEN];
 char lwd[MAX_PROMPT_LEN];
 int redirection_type;
+char *shell_argv0 = NULL;
 
 
 ///Simple for now, but will be expanded in a following section
@@ -473,57 +473,37 @@ int has_batched_commands(char line[]){
 }
 
 //batched commands tokenisation
-void tokenise_batched_commands(char line[], char* commands[], int* command_count){
-
-    //no commands so reset the command count
+void tokenise_batched_commands(char line[], char* commands[], int* command_count)
+{
     *command_count = 0;
-
-    //pointer to first character of the line of agruments
     char *start = line;
+    char *p = line;
 
-    //iterate till end of the string
-    while(*start != '\0'){
+    int paren_depth = 0;
 
-        //skipping some space before hte command
-        while(*start==' '||*start=='\t'){
-            start++;
-        }
-        //if we hit the end of the lined after skipping spaces which meand an empty command
-        if (*start == '\0'){
-            break;
-        }
-            
-        //finding the end of the command
-        char *end;
-        end = start;
+    while (*p != '\0') {
 
-        while (*end != '\0' && *end != ';'){
-            end++;
+        if (*p == '(')
+            paren_depth++;
+
+        else if (*p == ')')
+            paren_depth--;
+
+        else if (*p == ';' && paren_depth == 0) {
+            // End of a top-level command
+            *p = '\0';
+            commands[(*command_count)++] = start;
+            start = p + 1;
         }
 
-        char *trim = end - 1;
-
-        //getting rid of the unecesary space before the end of the command
-        while (trim >= start && (*trim == ' ' || *trim == '\t')){
-            trim--;
-        }
-        *(trim + 1) = '\0';
-
-        //if trimming didnt need to occur we do this
-
-        if (*end == ';') {
-            //end the current command
-            *end = '\0';   
-            end++;
-        }
-
-        commands[*command_count] = start;
-        (*command_count)++;
-
-        start = end;
+        p++;
     }
 
+    // last command
+    if (*start != '\0')
+        commands[(*command_count)++] = start;
 }
+
 
 int command_with_pipes_flag(char* args[], int argsc) {
     for (int i = 0; i < argsc; i++) {
@@ -540,5 +520,203 @@ int command_with_redirection_flag(char* args[], int argsc) {
     }
     return 0;
 }
+
+
+//subshell functions
+void trim_whitespace(char *s) {
+    // Trim leading whitespace
+    while (*s == ' ' || *s == '\t') s++;
+
+    // Trim trailing whitespace
+    char *end = s + strlen(s) - 1;
+    while (end > s && (*end == ' ' || *end == '\t'))
+        end--;
+    *(end + 1) = '\0';
+}
+
+
+void execute_line(char *line, char lwd[])
+{
+    // variables for parsing
+    char *args[MAX_ARGS];
+    int argsc = 0;
+
+    char *commands[MAX_ARGS];
+    int command_count = 0;
+
+    // ============================
+    // 1) WHOLE-LINE SUBSHELL CHECK
+    //    e.g. (cd /tmp ; pwd)
+    // ============================
+    char inner[MAX_LINE];
+    if (is_subshell_segment(line, inner, sizeof(inner))) {
+        run_subshell(inner);
+        return;
+    }
+
+    // ============================
+    // 2) BATCHED COMMANDS PATH
+    // ============================
+    if (has_batched_commands(line)) {
+
+        // Split the line into commands separated by ';'
+        tokenise_batched_commands(line, commands, &command_count);
+
+        // Process each command independently
+        for (int i = 0; i < command_count; i++) {
+            trim_whitespace(commands[i]);
+
+            // NEW: allow subshells as individual batch elements later (Stage 4)
+            // For now, we leave this out if you're strictly at Stage 3.
+
+            // detect subshell as a batch element
+            char inner[MAX_LINE];
+            if (is_subshell_segment(commands[i], inner, sizeof(inner))) {
+                run_subshell(inner);
+                continue;   // do NOT parse — subshell took care of it
+            }
+
+
+            // Parse the sub command
+            parse_command(commands[i], args, &argsc);
+            if (argsc == 0) continue; // empty command
+
+            // cd
+            if (strcmp(args[0], "cd") == 0) {
+                run_cd(args, argsc, lwd);
+                continue;
+            }
+
+            // pipes
+            if (command_with_pipes_flag(args, argsc)) {
+                launch_program_with_pipes(args, argsc);
+                continue;
+            }
+
+            // redirection if no pipes
+            if (command_with_redirection_flag(args, argsc)) {
+                launch_program_with_redirection(args, argsc);
+                continue;
+            }
+
+            // Basic command
+            launch_program(args, argsc);
+        }
+
+        return;
+    }
+
+    // ============================
+    // 3) SINGLE-COMMAND PATH
+    // ============================
+
+    if (command_with_pipes(line)) {
+        parse_command(line, args, &argsc);
+        launch_program_with_pipes(args, argsc);
+        return;
+    }
+
+    if (is_cd(line)) {
+        parse_command(line, args, &argsc);
+        run_cd(args, argsc, lwd);
+        return;
+    }
+
+    if (command_with_redirection(line)) {
+        parse_command(line, args, &argsc);
+        launch_program_with_redirection(args, argsc);
+        reap();
+        return;
+    }
+
+    // plain command
+    parse_command(line, args, &argsc);
+    if (argsc > 0) {
+        launch_program(args, argsc);
+        reap();
+    }
+}
+
+
+
+int is_subshell_segment(const char *line, char *inner, size_t inner_sz) {
+    const char *start = line;
+
+    // Skip leading spaces so we still detect:
+    //    (echo hi)
+    while (*start == ' ' || *start == '\t')
+        start++;
+
+    // If the first non-whitespace character isn't '(' → not a subshell
+    if (*start != '(')
+        return 0;
+
+    // Now find the end of the actual string
+    const char *end = line + strlen(line) - 1;
+
+    // Skip trailing spaces
+    while (end > start && (*end == ' ' || *end == '\t'))
+        end--;
+
+    // If the last non-whitespace char isn't ')' → not a subshell
+    if (*end != ')')
+        return 0;
+
+    // Now extract the inside of the parentheses
+    start++;  // move past '('
+    size_t len = end - start;
+
+    if (len <= 0)
+        return 0;
+
+    // Copy safely into output buffer
+    if (len >= inner_sz)
+        len = inner_sz - 1;
+
+    memcpy(inner, start, len);
+    inner[len] = '\0';
+
+    return 1;
+}
+
+
+void run_subshell(const char *inner) {
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork failed");
+        return;
+    }
+
+    if (pid == 0) {
+        // Child: run OUR shell again with "-c <inner>"
+        char *argv_sub[] = { shell_argv0, "-c", (char*)inner, NULL };
+        execvp(shell_argv0, argv_sub);
+        perror("execvp subshell failed");
+        _exit(1);
+    }
+
+    // Parent waits for subshell to finish
+    int status;
+    waitpid(pid, &status, 0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

@@ -23,6 +23,7 @@ extern int redirection_type;  // 0 = none, 1 = >, 2 = >>, 3 = < stores the type 
 
 extern char cwd[MAX_PROMPT_LEN];
 extern char lwd[MAX_PROMPT_LEN];
+extern char *shell_argv0;
 
 ///Enum for readable argument indices (use where required)
 enum ArgIndex
@@ -101,7 +102,11 @@ int command_with_redirection_flag(char* args[], int argsc);
 void print_tokens(char* args[], int argsc);
 void print_piped_tokens(char* args[], int argsc);
 
-
+//subshell
+void execute_line(char *line, char lwd[]);
+int is_subshell_segment(const char *line, char *inner, size_t inner_sz);
+void run_subshell(const char *inner);
+void trim_whitespace(char *s);
 
 
 #endif
