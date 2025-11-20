@@ -4,19 +4,13 @@
 
 int main(int argc, char *argv[]){
 
-    // Store the path of the shell executable for later use inside subshells.
-    // (argv[0] always contains the path used to launch this program.)
-    // We save it globally so run_subshell() knows what binary to exec.
+    //stores programs own path
     shell_argv0 = argv[0];
-    // If the user ran:  s3 -c commands
-    // then run ONLY that command and exit immediately.
-    // argv[1] = "-c"
-    // argv[2] = the string of commands to execute.
+
+    // if the user ran  s3 -c command then run only the command part and execute right after
     if (argc > 2 && strcmp(argv[1], "-c") == 0) {
 
-        // Copy the command string safely into a local buffer.
-        // "line" will be passed to execute_line() exactly as if
-        // the user typed it in interactive mode.
+        // copying the subshell command into the line buffer
         char line[MAX_LINE];
         strncpy(line, argv[2], MAX_LINE - 1);
         line[MAX_LINE - 1] = '\0';
@@ -24,7 +18,7 @@ int main(int argc, char *argv[]){
         char lwd[MAX_PROMPT_LEN];
         init_lwd(lwd);
 
-        // Run the single line of commands.
+        // here we run he single line of command in the subshell
         execute_line(line, lwd);
 
         return 0;

@@ -283,8 +283,7 @@ int is_cd(char args[])
 }
 
 // change directory to the one specified 
-void run_cd(char* args[], int argsc, char lwd[])
-{
+void run_cd(char* args[], int argsc, char lwd[]){
     const char* home = getenv("HOME");
     //case 1: '' go to home directory
     if(args[1] == NULL)
@@ -313,8 +312,7 @@ void run_cd(char* args[], int argsc, char lwd[])
     }
 }
 
-void init_lwd(char lwd[])
-{
+void init_lwd(char lwd[]){
     lwd = getcwd(lwd, MAX_PROMPT_LEN);
 }
 
@@ -379,6 +377,7 @@ void launch_program_with_pipes(char* args[], int argsc){
 
     int prevRead = -1;
     int fd[2];
+
     for(int i = 0; i < num_of_commands; ++i){
         if(i < num_of_commands - 1){
             if (pipe(fd) == -1) {
@@ -405,6 +404,23 @@ void launch_program_with_pipes(char* args[], int argsc){
                 close(fd[0]);
             }
 
+            //check if this command is an inner shell
+
+            char temp_cmd[MAX_LINE];
+            reconstruct_segment(cmds_piped[i], temp_cmd);// joining the tokens of cmds_piped[i] into one string
+            trim_whitespace(temp_cmd);
+
+            char inner[MAX_LINE];
+
+            if (is_subshell_segment(temp_cmd, inner, sizeof(inner))) {
+                //run the inner shell
+                char *argv_sub[] = { shell_argv0, "-c", inner, NULL };
+                execvp(shell_argv0, argv_sub);
+                perror("execvp subshell in pipe failed");
+                exit(EXIT_FAILURE);
+            }
+
+            //not a subshell
             // get number of args for current command
             int local_argc = 0;
             while (local_argc < MAX_ARGS && cmds_piped[i][local_argc] != NULL){
@@ -446,18 +462,17 @@ void launch_program_with_pipes(char* args[], int argsc){
         } 
         else{
             // parent closes pipe and preps for next pipe
-
             if (prevRead != -1) close(prevRead);
             if (i < num_of_commands - 1) {
                 close(fd[1]);
                 prevRead = fd[0];
-            }
-            // wait for child to finish
-            for(int i = 0; i < num_of_commands; ++i){
-                waitpid(pids[i], NULL, 0);
-            }
+            } 
         }
+    }
 
+    // wait for child to finish
+    for(int i = 0; i < num_of_commands; ++i){
+        waitpid(pids[i], NULL, 0);
     }
 }
 
@@ -522,64 +537,119 @@ int command_with_redirection_flag(char* args[], int argsc) {
 }
 
 
+
 //subshell functions
 void trim_whitespace(char *s) {
-    // Trim leading whitespace
+    
     while (*s == ' ' || *s == '\t') s++;
 
-    // Trim trailing whitespace
     char *end = s + strlen(s) - 1;
     while (end > s && (*end == ' ' || *end == '\t'))
         end--;
     *(end + 1) = '\0';
 }
 
+//checks if the input command is a subshell
+int is_subshell_segment(const char *line, char *inner, int inner_sz) {
+    const char *start = line;
 
-void execute_line(char *line, char lwd[])
-{
-    // variables for parsing
+    
+    while (*start == ' ' || *start == '\t')
+        start++;
+
+    // check if the first character is not a whitespace but a opening (
+    if (*start != '(')
+        return 0;
+
+    // end of the string
+    const char *end = line + strlen(line) - 1;
+
+    
+    while (end > start && (*end == ' ' || *end == '\t'))
+        end--;
+
+    // checks if the last non spaced character of the string is a bracket
+    if (*end != ')')
+        return 0;
+
+    // extracting content within the subshell command
+    start++; 
+    int len = end - start;
+
+    if (len <= 0)
+        return 0;
+
+    // copying the inner command within the brackets into inner
+    if (len >= inner_sz)
+        len = inner_sz - 1;
+
+    memcpy(inner, start, len);
+    inner[len] = '\0';
+
+    return 1;
+}
+
+//run the subshell with execvp
+void run_subshell(const char *inner) {
+    int rc = fork();
+
+    if (rc < 0) {
+        perror("fork failed");
+        return;
+    }
+
+    if (rc == 0) {
+        // run the subshell same path execept now with -c to symbolise its a subshell for rest of the subshell program
+        char *argv_sub[] = { shell_argv0, "-c", (char*)inner, NULL };
+        execvp(shell_argv0, argv_sub);
+        perror("execvp subshell failed");
+        _exit(1);
+    }
+
+    int status;
+    waitpid(rc, &status, 0);
+}
+
+//executed in the while loop
+void execute_line(char *line, char lwd[]){
+    // the subshell variables to store
     char *args[MAX_ARGS];
     int argsc = 0;
 
     char *commands[MAX_ARGS];
     int command_count = 0;
 
-    // ============================
-    // 1) WHOLE-LINE SUBSHELL CHECK
-    //    e.g. (cd /tmp ; pwd)
-    // ============================
+    //detection and running of subshells
     char inner[MAX_LINE];
     if (is_subshell_segment(line, inner, sizeof(inner))) {
         run_subshell(inner);
         return;
     }
 
-    // ============================
-    // 2) BATCHED COMMANDS PATH
-    // ============================
+    //handling batched commands
     if (has_batched_commands(line)) {
 
-        // Split the line into commands separated by ';'
+        //tokenising the input commands
         tokenise_batched_commands(line, commands, &command_count);
 
-        // Process each command independently
+        // process each command within the batch independently
         for (int i = 0; i < command_count; i++) {
             trim_whitespace(commands[i]);
 
-            // NEW: allow subshells as individual batch elements later (Stage 4)
-            // For now, we leave this out if you're strictly at Stage 3.
-
-            // detect subshell as a batch element
+            // detect subshell as a command within the batch and if so run as subshell
             char inner[MAX_LINE];
             if (is_subshell_segment(commands[i], inner, sizeof(inner))) {
                 run_subshell(inner);
-                continue;   // do NOT parse — subshell took care of it
+                continue; 
             }
-
 
             // Parse the sub command
             parse_command(commands[i], args, &argsc);
-            if (argsc == 0) continue; // empty command
+            
+            //if there was no argument passed
+            if (argsc == 0){
+                continue;
+            }
 
             // cd
             if (strcmp(args[0], "cd") == 0) {
@@ -606,10 +676,9 @@ void execute_line(char *line, char lwd[])
         return;
     }
 
-    // ============================
-    // 3) SINGLE-COMMAND PATH
-    // ============================
-
+   
+    //single commands handled here
+  
     if (command_with_pipes(line)) {
         parse_command(line, args, &argsc);
         launch_program_with_pipes(args, argsc);
@@ -637,73 +706,18 @@ void execute_line(char *line, char lwd[])
     }
 }
 
-
-
-int is_subshell_segment(const char *line, char *inner, size_t inner_sz) {
-    const char *start = line;
-
-    // Skip leading spaces so we still detect:
-    //    (echo hi)
-    while (*start == ' ' || *start == '\t')
-        start++;
-
-    // If the first non-whitespace character isn't '(' → not a subshell
-    if (*start != '(')
-        return 0;
-
-    // Now find the end of the actual string
-    const char *end = line + strlen(line) - 1;
-
-    // Skip trailing spaces
-    while (end > start && (*end == ' ' || *end == '\t'))
-        end--;
-
-    // If the last non-whitespace char isn't ')' → not a subshell
-    if (*end != ')')
-        return 0;
-
-    // Now extract the inside of the parentheses
-    start++;  // move past '('
-    size_t len = end - start;
-
-    if (len <= 0)
-        return 0;
-
-    // Copy safely into output buffer
-    if (len >= inner_sz)
-        len = inner_sz - 1;
-
-    memcpy(inner, start, len);
-    inner[len] = '\0';
-
-    return 1;
-}
-
-
-void run_subshell(const char *inner) {
-    pid_t pid = fork();
-
-    if (pid < 0) {
-        perror("fork failed");
-        return;
+//reconstruct segment
+void reconstruct_segment(char *cmd[], char *outbuf) {
+    outbuf[0] = '\0';
+    for (int i = 0; cmd[i] != NULL; i++) {
+        strcat(outbuf, cmd[i]);
+        strcat(outbuf, " ");
     }
-
-    if (pid == 0) {
-        // Child: run OUR shell again with "-c <inner>"
-        char *argv_sub[] = { shell_argv0, "-c", (char*)inner, NULL };
-        execvp(shell_argv0, argv_sub);
-        perror("execvp subshell failed");
-        _exit(1);
+    int len = strlen(outbuf);
+    if (len > 0 && outbuf[len - 1] == ' ') {
+        outbuf[len - 1] = '\0';
     }
-
-    // Parent waits for subshell to finish
-    int status;
-    waitpid(pid, &status, 0);
 }
-
-
-
-
 
 
 

@@ -104,9 +104,9 @@ void print_piped_tokens(char* args[], int argsc);
 
 //subshell
 void execute_line(char *line, char lwd[]);
-int is_subshell_segment(const char *line, char *inner, size_t inner_sz);
+int is_subshell_segment(const char *line, char *inner, int inner_sz);
 void run_subshell(const char *inner);
 void trim_whitespace(char *s);
-
+void reconstruct_segment(char *cmd[], char *outbuf);
 
 #endif
