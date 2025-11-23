@@ -322,6 +322,7 @@ void pushd(const char* dir){}
 void popd(){}
 void dirs(){}
 
+
 //check whether input has pipes
 int command_with_pipes(char line[]){
     for(int i = 0; line[i] != '\0'; ++i){
@@ -333,26 +334,40 @@ int command_with_pipes(char line[]){
     return 0;
 }
 
+
 //split piped commands 
-int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_ARGS][MAX_ARGS]){
+int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_ARGS][MAX_ARGS]) {
     int cmd_index = 0;
     int arg_index = 0;
+    int paren_depth = 0;
 
-    for(int i = 0; i < argsc; ++i){
-        if(strcmp(args[i], "|") == 0){
-            //current command has ended
+    for (int i = 0; i < argsc; ++i) {
+        char *tok = args[i];
+
+        // split on | at top level not within the subshell
+        if (strcmp(tok, "|") == 0 && paren_depth == 0) {
             cmds_piped[cmd_index][arg_index] = NULL;
             cmd_index++;
             arg_index = 0;
             continue;
         }
-        cmds_piped[cmd_index][arg_index++] = args[i];
+
+        // Otherwise, this token is part of the current command
+        cmds_piped[cmd_index][arg_index++] = tok;
+
+        // updating the parentheses depth based on characters in this token
+        for (char *p = tok; *p != '\0'; ++p) {
+            if (*p == '(')
+                paren_depth++;
+            else if (*p == ')')
+                paren_depth--;
+        }
     }
 
     cmds_piped[cmd_index][arg_index] = NULL;
     return cmd_index + 1;
-
 }
+
 
 void print_piped_tokens(char* args[], int argsc){
     char *cmds_piped[MAX_ARGS][MAX_ARGS];
