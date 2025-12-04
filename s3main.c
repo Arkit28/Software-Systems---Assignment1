@@ -1,6 +1,6 @@
 #include "s3.h"
 
-
+DirStack dirStack;
 
 int main(int argc, char *argv[]){
 
@@ -32,7 +32,18 @@ int main(int argc, char *argv[]){
 
     init_lwd(lwd);///Implement this function: initializes lwd with the cwd (using getcwd)
 
+    
+    strncpy(dirStack.directories[0], lwd, MAX_LINE - 1);
+    dirStack.directories[0][MAX_LINE - 1] = '\0';
+    dirStack.top = 0;
 
+    strncpy(dirStack.directories[1], "/mnt/c/projects", MAX_LINE - 1);
+    dirStack.directories[1][MAX_LINE - 1] = '\0';
+    dirStack.top = 1;
+
+    strncpy(dirStack.directories[2], "/mnt/c/programming/year2", MAX_LINE - 1);
+    dirStack.directories[2][MAX_LINE - 1] = '\0';
+    dirStack.top = 2;
 
     while (1) {
 

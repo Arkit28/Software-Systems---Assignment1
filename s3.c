@@ -1,7 +1,9 @@
 #include "s3.h"
 #define MAX_ARGS 128
+
 char cwd[MAX_PROMPT_LEN];
 char lwd[MAX_PROMPT_LEN];
+extern DirStack dirStack;
 int redirection_type;
 char *shell_argv0 = NULL;
 
@@ -305,8 +307,8 @@ void run_cd(char* args[], int argsc, char lwd[]){
     }
 
     //case3: "FILEPATH" change directory to normal path
-    if(chdir(args[1])){
-        lwd = cwd;
+    if(!chdir(args[1])){
+        strcpy(lwd, cwd);
         strcpy(cwd, args[1]);
         return;
     }
@@ -315,12 +317,6 @@ void run_cd(char* args[], int argsc, char lwd[]){
 void init_lwd(char lwd[]){
     lwd = getcwd(lwd, MAX_PROMPT_LEN);
 }
-
-char directory_stack[128][MAX_LINE];  
-int top = -1;
-void pushd(const char* dir){}
-void popd(){}
-void dirs(){}
 
 
 //check whether input has pipes
@@ -672,6 +668,19 @@ void execute_line(char *line, char lwd[]){
                 continue;
             }
 
+            if(strcmp(args[0], "popd") == 0 || strcmp(args[0], "pushd") == 0 || strcmp(args[0], "dirs") == 0){
+                if(strcmp(args[0], "pushd") == 0){
+                    pushd(args[1]);
+                }
+                else if(strcmp(args[0], "popd") == 0){
+                    popd();
+                }
+                else if(strcmp(args[0], "dirs") == 0){
+                    dirs();
+                }
+                continue;
+            }
+
             // pipes
             if (command_with_pipes_flag(args, argsc)) {
                 launch_program_with_pipes(args, argsc);
@@ -713,6 +722,23 @@ void execute_line(char *line, char lwd[]){
         return;
     }
 
+    if(is_directory_command(line)){
+        parse_command(line, args, &argsc);
+        if(strcmp(args[0], "pushd") == 0){
+            printf("Pushing directory onto stack...\n");
+            pushd(args[1]);
+        }
+        else if(strcmp(args[0], "popd") == 0){
+            printf("Popping directory from stack...\n");
+            popd();
+        }
+        else if(strcmp(args[0], "dirs") == 0){
+            printf("Displaying directory stack...\n");
+            dirs();
+        }
+        return;
+    }
+
     // plain command
     parse_command(line, args, &argsc);
     if (argsc > 0) {
@@ -731,6 +757,55 @@ void reconstruct_segment(char *cmd[], char *outbuf) {
     int len = strlen(outbuf);
     if (len > 0 && outbuf[len - 1] == ' ') {
         outbuf[len - 1] = '\0';
+    }
+}
+
+char directory_stack[128][MAX_LINE];  
+int top = -1;
+
+int is_directory_command(const char* dir){
+    if(dir == NULL){
+        return 0;
+    }
+    if(strcmp(dir, "pushd") == 0 || strcmp(dir, "popd") == 0 || strcmp(dir, "dirs") == 0){
+        return 1;
+    }
+    return 0;
+}
+
+void pushd(char* dir)
+{
+    if(dirStack.top >= 127){
+        printf("pushd: Directory stack full!\n");
+        return;
+    }       
+
+    dirStack.top++;
+    strncpy(dirStack.directories[dirStack.top], dir, MAX_LINE - 1);
+    dirStack.directories[dirStack.top][MAX_LINE - 1] = '\0';
+    run_cd((char*[]){ "cd", dir, NULL }, 2, lwd);
+    dirs();
+    return;
+}
+
+void popd()
+{
+    if(dirStack.top <= 0){
+        printf("popd : Directory stack empty!\n");
+        return;
+    }
+
+    run_cd((char*[]){ "cd", dirStack.directories[dirStack.top], NULL }, 2, lwd);
+    dirStack.top--;
+    dirStack.directories[dirStack.top + 1][0] = '\0';
+    dirs();
+    return;
+}
+
+void dirs()
+{    
+    for(int i = dirStack.top; i >=0; --i){
+            printf("%s\n", dirStack.directories[i]);
     }
 }
 

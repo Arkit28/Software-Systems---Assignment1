@@ -76,14 +76,6 @@ int is_cd(char args[]);
 void run_cd(char* args[], int argsc, char lwd[]);
 void init_lwd(char lwd[]);                          //set lwd = current working directory on shell start
 
-//EXTENSION: directory stack using a 2d array, with basic functions
-extern char directory_stack[128][MAX_LINE];
-extern int top;
-void pushd(const char* dir);
-void popd();
-void dirs();
-
-
 // pipeline functions:
 int command_with_pipes(char line[]);
 int tokenise_pipe_commands(char* args[], int argsc, char* cmds_piped[MAX_ARGS][MAX_ARGS]);
@@ -108,5 +100,19 @@ int is_subshell_segment(const char *line, char *inner, int inner_sz);
 void run_subshell(const char *inner);
 void trim_whitespace(char *s);
 void reconstruct_segment(char *cmd[], char *outbuf);
+
+//EXTENSION: directory stack using a 2d array, with basic functions
+
+typedef struct {
+    char directories[128][128];
+    int top;
+} DirStack;
+
+int is_directory_command(const char* dir);
+
+void pushd(char* dir);
+void popd();
+void dirs();
+
 
 #endif
