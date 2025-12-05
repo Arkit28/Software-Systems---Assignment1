@@ -81,9 +81,9 @@ Testing given commands
 
 ![echo heading](Images/task2_echo_calendar_heading.png)
 
-→ `cal -y >> txt/calendar.txt`
+→ `echo "June 2024" >> txt/calendar.txt`
 
-![cal -y >>](Images/task2_cal_y_append.png)
+![echo append](Images/task2_echo_calendar_append.png)
 
 → `tac txt/phrases.txt > txt/phrases_reversed.txt`
 
@@ -108,6 +108,151 @@ Testing given commands
 → `tr a-z A-Z < txt/phrases.txt`
 
 ![tr](Images/task2_tr_uppercase.png)
+
+
+### Task 3 – Support for cd
+
+![Support for cd](Images/task3_cd.png)
+
+→ `cd txt` takes us into the results directory  
+→ `cd ..` takes us back to the previous directory  
+→ `cd .` stays in the current working directory  
+→ `cd` with no arguments takes us to the user’s home directory
+
+
+### Task 4 – Commands with pipes
+
+Testing given commands
+
+→ `cat txt/phrases.txt | sort > txt/phrases_sorted.txt`
+
+![cat + sort pipe](Images/task4_cat_sort_pipe.png)
+
+→ `tr a-z A-Z < txt/phrases.txt | grep BURN | sort | wc -l`
+
+![tr → grep BURN → sort → wc -l](Images/task4_tr_grep_sort_wc.png)
+
+→ `ps aux | grep python | sort -k 3 -nr | head`
+
+![ps aux | grep python | sort -k 3 -nr | head](Images/task4_ps_grep_sort_head.png)
+
+As we can see:
+
+- `cat txt/phrases.txt | sort > txt/phrases_sorted.txt`  
+  passes the output of cat through a pipe into sort and the final sorted output is redirected into txt/phrases_sorted.txt.
+
+- `tr a-z A-Z < txt/phrases.txt | grep BURN | sort | wc -l`  
+  uses input redirection into tr, then pipes through grep, sort, and finally wc -l, counting how many matching lines there are.
+
+- `ps aux | grep python | sort -k 3 -nr | head`  
+    lists all running processes, filters the ones related to Python, sorts them by CPU usage in descending order, and then shows only the top results.
+    This demonstrates that the shell can correctly pass data through multiple stages in a longer pipeline.
+
+
+### Task 5 – Batched commands
+
+Testing given commands
+
+→ `mkdir results ; cat txt/phrases.txt | sort | tac > results/rev_sort_phr.txt ; echo "Processing complete."`
+
+![mkdir + cat/sort/tac + echo](Images/task5_mkdir_cat_sort_tac_echo.png)
+
+→ `echo "Start processing"; cat txt/phrases.txt | sort > txt/phrases_sorted.txt; head -n 5 txt/phrases.txt; echo "Processing complete"`
+
+![echo + cat/sort + head + echo](Images/task5_echo_cat_sort_head_echo.png)
+
+→ `sort txt/phrases.txt | uniq > txt/phrases_unique.txt; wc -l txt/phrases_unique.txt`
+
+![sort/uniq + wc -l](Images/task5_sort_uniq_wc.png)
+
+As shown above:
+
+- In the first command mkdir results creates the results directory, the cat | sort | tac pipeline produces a reversed sorted file inside results, and echo prints a completion message. Each part is separated by ; and run in sequence.
+- In the second command echo prints a start message, the file is sorted and saved, the first 5 lines are displayed with head, and a final echo confirms completion.
+- In the third command, sort and uniq produce a list of unique phrases, and wc -l counts how many unique lines there are.
+
+
+### Task 6 – Proposed Extension 1: Subshells
+
+Testing given commands
+
+→ `echo "Batch start"; (grep -i burn txt/phrases.txt | sort > txt/phrases_burn_sorted.txt); wc -l txt/phrases_burn_sorted.txt; echo "Batch complete"`
+
+![Subshell grep/sort + batch](Images/task6_subshell_burn_sorted.png)
+
+→ `echo "Starting"; (head -n 5 txt/phrases.txt | sort > txt/phrases_top5_sorted.txt); cat txt/phrases_top5_sorted.txt; echo "Finished"`
+
+![Subshell head/sort + batch](Images/task6_subshell_top5_sorted.png)
+
+As we can see:
+
+- In the first command everything inside the parentheses runs in a subshell:  
+  runs in its own shell process, writes the sorted matches to txt/phrases_burn_sorted.txt, and then the main shell continues with wc -l and the final echo.
+
+- In the second command, the subshell runs  
+  head -n 5 txt/phrases.txt | sort > txt/phrases_top5_sorted.txt
+  by itself producing a sorted file of the first 5 lines. After the subshell finishes, the main shell prints the contents with cat and then echoes finished.
+
+
+### Task 7 – Proposed Extension 2: Nested subshells
+
+Testing given commands
+
+→ `echo "Start"; (echo "Outer subshell"; (head -n 3 txt/phrases.txt | sort > txt/top3_sorted.txt); cat txt/top3_sorted.txt); echo "Done"`
+
+![Nested subshell – top 3 sorted](Images/task7_nested_top3.png)
+
+→ `echo "Start"; (cat txt/phrases.txt | head -n 5 > txt/outer_top5.txt; echo "Outer layer"; (sort txt/outer_top5.txt | uniq > txt/middle_unique.txt; echo "Middle layer"; (grep -i burn txt/middle_unique.txt | wc -l > txt/inner_burn_count.txt; echo "Inner layer"))); echo "Done"`
+
+![Nested subshell – outer/middle/inner layers](Images/task7_nested_layers.png)
+
+As we can see:
+
+- In the first command, there is a subshell inside another subshell:  
+  the outer subshell prints outer layer and then the inner subshell runs  
+  `head -n 3 txt/phrases.txt | sort > txt/top3_sorted.txt`,  
+  and then the outer subshell prints the sorted file before control returns to the main shell, which prints Done.
+
+- In the second command, three levels of subshells are used:
+  - the outer subshell takes the first 5 lines of phrases.txt and writes them to txt/outer_top5.txt, then prints Outer layer;
+  - the middle subshell sorts those lines, removes duplicates into txt/middle_unique.txt, and prints Middle layer;
+  - the inner subshell runs grep -i burn ... | wc -l to count matching lines and stores the result in txt/inner_burn_count.txt, then prints Inner layer.
+  
+These examples show that the shell correctly supports subshells nested to multiple levels, with each nested group running in its own child shell while still interacting through files and pipelines.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
