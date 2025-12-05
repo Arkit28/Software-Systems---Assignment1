@@ -1,7 +1,7 @@
 # Lab 1 – Custom Shell (`s3`)
 By Shashank and Archit
 
-##Develpment
+## Develpment
 
 For this project, we followed a sequential, divide and conquer methodology. 
 Instead of working on the entire shell together, we structured the development into clear functional stages and implemented them one at a time. 
@@ -35,7 +35,7 @@ This structure allowed us to work in parallel while avoiding conflicts.
 Each component was implemented only after the previous one was tested and functioning correct and this helped keep
 debugging manageable and improved code reliability.
 
-Although we developed different sections individually, we regularly discussed design choices such as parsing strategies, process control, forking behaviour, and redirection rules—to ensure the entire shell behaved consistently. 
+Although we developed different sections individually, we regularly discussed design choices such as parsing strategies, process control, forking behaviour, and redirection rules to ensure the entire shell behaved consistently. 
 After completing our sections, we integrated and tested them together, verifying combined behaviours e.g. pipes inside subshells, redirection within batches, nested parentheses handling and more.
 
 By progressing sequentially and validating each feature before moving on, we managed to create a decent shell implmentation.
