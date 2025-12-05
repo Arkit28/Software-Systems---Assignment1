@@ -1,7 +1,7 @@
 # Lab 1 – Custom Shell (`s3`)
 By Shashank and Archit
 
-## Testing
+## Features + Testing
 
 ![Basic commands](Images/BasicCommands.png)
 
