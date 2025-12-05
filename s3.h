@@ -104,13 +104,14 @@ void reconstruct_segment(char *cmd[], char *outbuf);
 //EXTENSION: directory stack using a 2d array, with basic functions
 
 typedef struct {
-    char directories[128][128];
+    char directories[128][MAX_LINE];
     int top;
 } DirStack;
 
+extern DirStack dirStack;
 int is_directory_command(const char* dir);
-
-void pushd(char* dir);
+int directory_exists(const char* path);
+void pushd(char *args[], int argsc);
 void popd();
 void dirs();
 

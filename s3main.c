@@ -1,6 +1,5 @@
 #include "s3.h"
 
-DirStack dirStack;
 
 int main(int argc, char *argv[]){
 

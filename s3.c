@@ -3,7 +3,7 @@
 
 char cwd[MAX_PROMPT_LEN];
 char lwd[MAX_PROMPT_LEN];
-extern DirStack dirStack;
+
 int redirection_type;
 char *shell_argv0 = NULL;
 
@@ -17,7 +17,7 @@ void construct_shell_prompt(char shell_prompt[], char lwd[])
         cwd[0] = '\0';
     }
 
-    snprintf(shell_prompt, MAX_PROMPT_LEN, "[%.248s]$ ", cwd);
+    snprintf(shell_prompt, MAX_PROMPT_LEN+13, "\033[34m[%s]\033[0m$ ", cwd);
 }
 
 ///Prints a shell prompt and reads input from the user
@@ -670,12 +670,15 @@ void execute_line(char *line, char lwd[]){
 
             if(strcmp(args[0], "popd") == 0 || strcmp(args[0], "pushd") == 0 || strcmp(args[0], "dirs") == 0){
                 if(strcmp(args[0], "pushd") == 0){
-                    pushd(args[1]);
+                    printf("Pushing directory onto stack...\n");
+                    pushd(args, argsc);
                 }
                 else if(strcmp(args[0], "popd") == 0){
+                    printf("Popping directory from stack...\n");
                     popd();
                 }
                 else if(strcmp(args[0], "dirs") == 0){
+                    printf("Displaying directory stack...\n");
                     dirs();
                 }
                 continue;
@@ -725,8 +728,9 @@ void execute_line(char *line, char lwd[]){
     if(is_directory_command(line)){
         parse_command(line, args, &argsc);
         if(strcmp(args[0], "pushd") == 0){
+            //print_tokens(args, argsc);
             printf("Pushing directory onto stack...\n");
-            pushd(args[1]);
+            pushd(args, argsc);
         }
         else if(strcmp(args[0], "popd") == 0){
             printf("Popping directory from stack...\n");
@@ -760,32 +764,58 @@ void reconstruct_segment(char *cmd[], char *outbuf) {
     }
 }
 
-char directory_stack[128][MAX_LINE];  
-int top = -1;
+
+DirStack dirStack = { .top = -1 };
 
 int is_directory_command(const char* dir){
     if(dir == NULL){
         return 0;
     }
-    if(strcmp(dir, "pushd") == 0 || strcmp(dir, "popd") == 0 || strcmp(dir, "dirs") == 0){
+    if(strncmp(dir, "pushd", 4) == 0 || strncmp(dir, "popd", 4) == 0 || strncmp(dir, "dirs", 4) == 0){
         return 1;
     }
     return 0;
 }
 
-void pushd(char* dir)
+int directory_exists(const char* path){
+    struct stat info;
+    if(stat(path, &info) != 0){
+        return 0;
+    }
+    else if(info.st_mode & S_IFDIR){
+        return 1;
+    }
+    return 0;
+}
+
+void pushd(char* args[], int argsc)
 {
+    
     if(dirStack.top >= 127){
         printf("pushd: Directory stack full!\n");
         return;
     }       
 
+    if(argsc < 2){
+        printf("pushd: No directory specified!\n");
+        return;
+    }
+
+    if(!directory_exists(args[1])){
+        printf("pushd: Directory '%s' aint real cuzzy\n", args[1]);
+        return;
+    }
+
+    chdir(args[1]);
+
     dirStack.top++;
-    strncpy(dirStack.directories[dirStack.top], dir, MAX_LINE - 1);
+    strncpy(dirStack.directories[dirStack.top], args[1], MAX_LINE - 1);
     dirStack.directories[dirStack.top][MAX_LINE - 1] = '\0';
-    run_cd((char*[]){ "cd", dir, NULL }, 2, lwd);
+    printf("directory top: %s\n", dirStack.directories[dirStack.top]);
+
     dirs();
     return;
+    
 }
 
 void popd()
@@ -795,7 +825,6 @@ void popd()
         return;
     }
 
-    run_cd((char*[]){ "cd", dirStack.directories[dirStack.top], NULL }, 2, lwd);
     dirStack.top--;
     dirStack.directories[dirStack.top + 1][0] = '\0';
     dirs();
