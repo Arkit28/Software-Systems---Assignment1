@@ -1,0 +1,15 @@
+.:
+>
+README.md
+eval "$(ssh-agent -s)"
+eval "$(ssh-agent -s)".pub
+main
+s3
+s3.c
+s3.h
+s3main.c
+txt
+
+./txt:
+folder_contents.txt	
+phrases.txt
