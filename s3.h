@@ -111,6 +111,7 @@ typedef struct {
 extern DirStack dirStack;
 int is_directory_command(const char* dir);
 int directory_exists(const char* path);
+void init_directory_stack();
 void pushd(char *args[], int argsc);
 void popd();
 void dirs();

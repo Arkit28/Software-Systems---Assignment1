@@ -777,6 +777,19 @@ int is_directory_command(const char* dir){
     return 0;
 }
 
+void init_directory_stack()
+{
+    char current_dir[MAX_PROMPT_LEN];
+    if (getcwd(current_dir, sizeof(current_dir)) != NULL) {
+        strncpy(dirStack.directories[0], current_dir, MAX_LINE - 1);
+        dirStack.directories[0][MAX_LINE - 1] = '\0';
+        dirStack.top = 0;
+    } else {
+        perror("getcwd failed in init_directory_stack");
+        dirStack.top = -1;
+    }
+}
+
 int directory_exists(const char* path){
     struct stat info;
     if(stat(path, &info) != 0){
