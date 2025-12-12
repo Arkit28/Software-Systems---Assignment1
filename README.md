@@ -3,6 +3,8 @@ By Shashank and Archit
 
 ## Develpment
 
+We successfully completed every task with both PE1 and PE2. In addition we also added basic directory stack functionality, with *dirs*, *popd* and *pushd* (without modifiers like -n) working as expected in a UNIX shell.
+
 For this project, we followed a sequential, divide and conquer methodology. 
 Instead of working on the entire shell together, we structured the development into clear functional stages and implemented them one at a time. 
 This ensured that each new feature was built on top of a previously tested feature.
@@ -39,6 +41,13 @@ Although we developed different sections individually, we regularly discussed de
 After completing our sections, we integrated and tested them together, verifying combined behaviours e.g. pipes inside subshells, redirection within batches, nested parentheses handling and more.
 
 By progressing sequentially and validating each feature before moving on, we managed to create a decent shell implmentation.
+
+### Main tasks Implementation
+All main tasks were completed and tested(below)
+
+### PE1 Implementation
+
+### PE2 Implementation
 
 ## Features + Testing
 
